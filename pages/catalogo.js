@@ -4,7 +4,7 @@ import {
     QueryClientProvider,
     useQuery,
 } from 'react-query';
-import Cards from './cards';
+import Cards from '../components/cards';
 import {
     AppBar,
     Toolbar,
@@ -18,6 +18,7 @@ import {
     List,
     ListItem,
     ListItemText,
+    Link,
 } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -29,13 +30,17 @@ export default function Catalogo() {
 
     const [open, setOpen] = useState(false);
     const toggleDrawer = () => setOpen(!open);
-    const [categorias,setCategorias] = useState({});
+    const [categorias, setCategorias] = useState({});
+    const [filtro, setFiltro] = useState("all");
+    const [carrito, setCarrito] = useState([])
 
-    const valoresCarrito = (datos) => {
-
+    const valoresMenu = (datos) => {
         setCategorias(datos);
-        
     };
+
+    useEffect(() => {
+        setCategorias(categorias);
+    }, [categorias])
 
     return (
         <QueryClientProvider client={queryClient}>
@@ -70,7 +75,9 @@ export default function Catalogo() {
                     <div>
                         <IconButton color="inherit">
                             <Badge badgeContent={0} color="error">
-                                <ShoppingCartIcon />
+                                <Link href="/checkout" style={{ color: 'white' }}>
+                                    <ShoppingCartIcon />
+                                </Link>
                             </Badge>
                         </IconButton>
                     </div>
@@ -81,39 +88,32 @@ export default function Catalogo() {
                 <div style={{ width: 250 }}>
                     <List>
                         <ListItem button>
-                            <ListItemText primary="Inicio" />
-                        </ListItem>  
-                            {
-                                categorias.length > 0 ? categorias.map((el,index) =>{
-                                    <ListItem button>
-                                        <ListItemText primary={el[index]} />
-                                    </ListItem>            
-                                }): (<></>)
-                            }
-
-                        <ListItem button>
-                            <ListItemText primary="Categoría 1" />
+                            <ListItemText primary="Inicio" onClick={() => setFiltro("all")} />
                         </ListItem>
-                        <ListItem button>
-                            <ListItemText primary="Categoría 2" />
-                        </ListItem>
-                        {/* Agregar más categorías aquí */}
+                        {
+                            (Object.keys(categorias).map((key) => (
+                                <ListItem button>
+                                    <ListItemText key={key} primary={key} onClick={() => setFiltro(key)} />
+                                </ListItem>
+                            )))
+                        }
                     </List>
                 </div>
             </Drawer>
 
 
             {/* llamado de los items para renderizacion de la pagina con los productos*/}
-            <Items valoresCarrito={valoresCarrito} />
+            <Items valoresMenu={valoresMenu} filtro={filtro} />
         </QueryClientProvider>
     );
 }
 
 
 
-function Items({valoresCarrito}) {
+function Items({ valoresMenu, filtro }) {
     const [productos, setProductos] = useState([]);
     const [categorias, setCategorias] = useState({});
+
 
     const { data, isLoading, error } = useQuery('products', async () => {
         const response = await fetch('https://fakestoreapi.com/products');
@@ -124,7 +124,6 @@ function Items({valoresCarrito}) {
     });
 
     useEffect(() => {
-
         if (data) {
             setProductos(data)
             const nuevasCategorias = data.reduce((acumulador, element) => {
@@ -133,15 +132,23 @@ function Items({valoresCarrito}) {
                     [element.category]: element.category,
                 };
             }, {});
-
             setCategorias(nuevasCategorias)
-            valoresCarrito(categorias)
         }
     }, [data])
-    
+
+    useEffect(() => {
+        if (data) { 
+            const updatedItems = data.filter((item) => item.category === filtro);
+            setProductos(updatedItems)
+            if(filtro === "all"){
+                setProductos(data)
+            }
+        }
+    }, [filtro])
+
+    valoresMenu(categorias)
     return (
         <>
-        
             {productos.length === 0 ? <h3>Cargando...</h3> : (
                 <Cards producto={productos} />
             )}
