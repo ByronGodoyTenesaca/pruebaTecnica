@@ -1,0 +1,8 @@
+.boton{
+    background-color: brown;
+    padding: 9px;
+    border-radius: 0.8rem;
+    color: white;
+    text-decoration: none;
+    cursor: pointer;
+}
